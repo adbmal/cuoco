@@ -32,7 +32,7 @@ CCCOMPI=$(CC) $(CFLAGS)
 	$(CCCOMPILE)
 
 all:
-	clang -o cuoco -g cuoco.c
+	clang -o cuoco -g -fno-inline-small-functions -Wall cuoco.c 
 
 cuoco: cuoco.o
 	$(BUILDEXE)
