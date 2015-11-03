@@ -23,6 +23,7 @@ struct cuoco_ctx_t {
 	size_t ss_size;
 	char sRunStack[ 1024 * 128 ];
 };
+extern void cuoco_ctx_swap( void *, void *) asm("cuoco_ctx_swap");
 
 struct cuoco_t {
   int status;
@@ -50,37 +51,42 @@ int cuoco_create()
   return index;
 }
 
+char stack[1024 * 128];
+void *regs[5];
+void *regs2[5];
+
+void saybye();
+void yield()
+{
+  printf("Yield!\n");
+  regs2[0] = stack + 1024*128 - 1;
+  regs2[1] = saybye;
+  cuoco_ctx_swap(regs, regs2);
+}
+void yield2()
+{
+  printf("Yield2!\n");
+  cuoco_ctx_swap(regs2, regs);
+}
 void saybye()
 {
   printf("Bye!\n");
+  yield2();
+}
 
-}
-void yield();
-void b()
-{
-  void (*foo_ptr)() = yield;
-  foo_ptr();
-}
 void sayhi()
 {
-  printf("Hi!\n");
-  b();
+  printf("Hi1\n");
+  yield();
   printf("Hi2!\n");
 }
-char stack[1024 * 128];
-void *regs[5];
-void __attribute__ ((noinline)) yield()
-{
-  void *bp = (void *)stack + 1024 * 128 - 1;
-  void *func = saybye;
-  asm ("\t movq %0, 0(%%rbp)" : "=r"(bp));
-  asm ("\t movq %0, 8(%%rbp)" : "=r"(func));
-}
+// void *regs[5];
+void *a, *b, *c;
 
 int main(int argc, char *argv[])
 {
   printf("Hi, main!\n");
-  printf("Hi, create %d\n", cuoco_create());
+  // printf("Hi, create %d\n", cuoco_create());
 
   sayhi();
 
