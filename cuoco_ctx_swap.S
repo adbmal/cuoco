@@ -57,6 +57,51 @@ cuoco_ctx_swap:
 
 #elif defined(__x86_64__)
 
+	pushq %r12
+	pushq %r13
+	pushq %r14
+	pushq %r15
+	pushq %rbx
+	pushq %rbp
+	leaq 48(%rsp),%rsp
+
+	movq %rbx,_rbx(%rdi)
+	movq %rdi,_rdi(%rdi)
+	movq %rsi,_rsi(%rdi)
+	/* sp */
+	movq (%rsp), %rcx
+	movq %rcx, _rip(%rdi)
+	leaq 8(%rsp), %rcx
+	movq %rcx, _rsp(%rdi)
+
+	/* sp */
+	movq _rip(%rsi), %rcx
+	movq _rsp(%rsi), %rsp
+	pushq %rcx
+
+	movq _rbx(%rsi),%rbx
+	movq _rdi(%rsi),%rdi
+	movq _rsi(%rsi),%rsi
+
+	xorl %eax, %eax
+	ret
+
+	leaq -80(%rsp),%rsp
+	popq %r9
+	popq %r8
+	popq %rcx
+	popq %rdx
+	popq %r15
+	popq %r14
+	popq %r13
+	popq %r12
+	popq %rbp
+	leaq 8(%rsp),%rsp
+
+
+
+
+
 	leaq -8(%rsp),%rsp
 	pushq %rbp
 	pushq %r12
