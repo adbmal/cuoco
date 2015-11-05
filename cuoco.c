@@ -58,59 +58,33 @@ void *regs2[5];
 void saybye();
 void yield()
 {
-  // printf("Yield!\n");
-  cuoco_ctx_swap(regs, regs2);
+  if(current_co++%2==0)
+    cuoco_ctx_swap(regs, regs2);
+  else
+    cuoco_ctx_swap(regs2, regs);
 }
-void yield2()
+
+void saybyebye(int times)
 {
-  // printf("Yield2!\n");
-  cuoco_ctx_swap(regs2, regs);
+  for(int a=0; a<times; ++a)
+  {
+    printf("Bye %d\n", a);
+    yield();
+  }
 }
 void saybye()
 {
-  char a = 0 + 'a';
-  char b = 1 + 'a';
-  char c = 2 + 'a';
-  char d = 3 + 'a';
-  char e = 4 + 'a';
-  char f = 5 + 'a';
-  char g = 6 + 'a';
-  char h = 7 + 'a';
-  char i = 8 + 'a';
-
-  printf("Bye %c %c %c %c %c %c %c %c %c\n", a++, b++, c++, d++, e++, f++, g++, h++, i++);
-  yield2();
-  printf("Bye %c %c %c %c %c %c %c %c %c\n", a++, b++, c++, d++, e++, f++, g++, h++, i++);
-  yield2();
-  printf("Bye %c %c %c %c %c %c %c %c %c\n", a++, b++, c++, d++, e++, f++, g++, h++, i++);
-  yield2();
-  printf("Bye %c %c %c %c %c %c %c %c %c\n", a++, b++, c++, d++, e++, f++, g++, h++, i++);
-  yield2();
-  printf("Bye %c %c %c %c %c %c %c %c %c\n", a++, b++, c++, d++, e++, f++, g++, h++, i++);
-  yield2();
+  int a = 100;
+  saybyebye(a);
 }
 
-void sayhi()
+void sayhi(int times)
 {
-  int a = 0;
-  int b = 1;
-  int c = 2;
-  int d = 3;
-  int e = 4;
-  int f = 5;
-  int g = 6;
-  int h = 7;
-  int i = 8;
-  printf("Hi %d %d %d %d %d %d %d %d %d\n", a++, b++, c++, d++, e++, f++, g++, h++, i++);
-  yield();
-  printf("Hi %d %d %d %d %d %d %d %d %d\n", a++, b++, c++, d++, e++, f++, g++, h++, i++);
-  yield();
-  printf("Hi %d %d %d %d %d %d %d %d %d\n", a++, b++, c++, d++, e++, f++, g++, h++, i++);
-  yield();
-  printf("Hi %d %d %d %d %d %d %d %d %d\n", a++, b++, c++, d++, e++, f++, g++, h++, i++);
-  yield();
-  printf("Hi %d %d %d %d %d %d %d %d %d\n", a++, b++, c++, d++, e++, f++, g++, h++, i++);
-  yield();
+  for(int a=0; a<times; ++a)
+  {
+    printf("Hi  %d\n", a);
+    yield();
+  }
 }
 // void *regs[5];
 void *a, *b, *c;
@@ -120,10 +94,10 @@ int main(int argc, char *argv[])
   printf("Hi, main!\n");
   regs2[0] = stack + 1024*128 - 1;
   regs2[1] = saybye;
-
+  current_co = 0;
   // printf("Hi, create %d\n", cuoco_create());
 
-  sayhi();
+  sayhi(10);
 
   printf("Hi, create %d\n", cuoco_create());
   printf("Hi, create %d\n", cuoco_create());

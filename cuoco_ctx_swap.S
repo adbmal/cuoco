@@ -4,25 +4,20 @@
 /* ------ */
 #define _rsp 0
 #define _rip 8
-#define _rbx 16
-#define _rdi 24
-#define _rsi 32
 
 .globl cuoco_ctx_swap
+
+#ifndef __MACH__
 .type  cuoco_ctx_swap, @function
+#endif
+
 cuoco_ctx_swap:
 
 #if defined(__i386__)
 
-	leal -4(%esp),%esp
 	pushl %ebx
-	pushl %ecx
-	pushl %edx
-
-	pushl %edi
-	pushl %esi
 	pushl %ebp
-	leal 28(%esp),%esp
+	leal 8(%esp),%esp
 
 	/* sp,ip */
 	/* param old ctx */
@@ -30,9 +25,7 @@ cuoco_ctx_swap:
 
 	movl (%esp), %ecx
 	movl %ecx, _eip(%eax)
-
-	leal 4(%esp), %ecx
-	movl %ecx, _esp(%eax)
+	movl %esp, _esp(%eax)
 
 	/* param new ctx */
 	movl 8(%esp), %eax
@@ -40,17 +33,11 @@ cuoco_ctx_swap:
 	/* push ret ( ip,sp ) */
 	movl _eip(%eax), %ecx
 	movl _esp(%eax), %esp
-	pushl %ecx
+	movl %ecx, (%esp)
 
-	leal -28(%esp),%esp
+	leal -8(%esp),%esp
 	popl %ebp
-	popl %esi
-	popl %edi
-
-	popl %edx
-	popl %ecx
 	popl %ebx
-	leal 4(%esp),%esp
 
 	movl $0, %eax
 	ret
@@ -65,84 +52,21 @@ cuoco_ctx_swap:
 	pushq %rbp
 	leaq 48(%rsp),%rsp
 
-	movq %rbx,_rbx(%rdi)
-	movq %rdi,_rdi(%rdi)
-	movq %rsi,_rsi(%rdi)
-	/* sp */
 	movq (%rsp), %rcx
 	movq %rcx, _rip(%rdi)
-	leaq 8(%rsp), %rcx
-	movq %rcx, _rsp(%rdi)
+	movq %rsp, _rsp(%rdi)
 
-	/* sp */
-	movq _rip(%rsi), %rcx
 	movq _rsp(%rsi), %rsp
-	pushq %rcx
+	movq _rip(%rsi), %rcx
+	movq %rcx, (%rsp)
 
-	movq _rbx(%rsi),%rbx
-	movq _rdi(%rsi),%rdi
-	movq _rsi(%rsi),%rsi
-
-	xorl %eax, %eax
-	ret
-
-	leaq -80(%rsp),%rsp
-	popq %r9
-	popq %r8
-	popq %rcx
-	popq %rdx
+	leaq -48(%rsp),%rsp
+	popq %rbp
+	popq %rbx
 	popq %r15
 	popq %r14
 	popq %r13
 	popq %r12
-	popq %rbp
-	leaq 8(%rsp),%rsp
-
-
-
-
-
-	leaq -8(%rsp),%rsp
-	pushq %rbp
-	pushq %r12
-	pushq %r13
-	pushq %r14
-	pushq %r15
-	pushq %rdx
-	pushq %rcx
-	pushq %r8
-	pushq %r9
-	leaq 80(%rsp),%rsp
-
-	movq %rbx,_rbx(%rdi)
-	movq %rdi,_rdi(%rdi)
-	movq %rsi,_rsi(%rdi)
-	/* sp */
-	movq (%rsp), %rcx
-	movq %rcx, _rip(%rdi)
-	leaq 8(%rsp), %rcx
-	movq %rcx, _rsp(%rdi)
-
-	/* sp */
-	movq _rip(%rsi), %rcx
-	movq _rsp(%rsi), %rsp
-	pushq %rcx
-
-	movq _rbx(%rsi),%rbx
-	movq _rdi(%rsi),%rdi
-	movq _rsi(%rsi),%rsi
-
-	leaq -80(%rsp),%rsp
-	popq %r9
-	popq %r8
-	popq %rcx
-	popq %rdx
-	popq %r15
-	popq %r14
-	popq %r13
-	popq %r12
-	popq %rbp
-	leaq 8(%rsp),%rsp
 
 	xorl %eax, %eax
 	ret
