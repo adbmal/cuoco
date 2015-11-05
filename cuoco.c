@@ -4,78 +4,74 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX_CUOCO 1024
+#define STACKSIZE (1024*128)
 
-#define ESP 0
-#define EIP 1
-// -----------
-#define RSP 0
-#define RIP 1
-#define RBX 2
-#define RDI 3
-#define RSI 4
-
-typedef int (*cuoco_ctx_pfn_t)( void *s);
-struct cuoco_ctx_t {
-  void *regs[ 5 ];
+typedef void (*cuoco_ctx_pfn_t)( void *s);
+typedef enum cuoco_status_enum {
+  INIT, END
+} cuoco_status;
+typedef struct cuoco_ctx_s {
+  void *regs[ 2 ];
   void *param;
 	cuoco_ctx_pfn_t routine;
-	size_t ss_size;
-	char sRunStack[ 1024 * 128 ];
-};
+  struct cuoco_ctx_s *next;
+  cuoco_status status;
+	char run_stack[ STACKSIZE ];
+} cuoco_ctx_t;
 extern void cuoco_ctx_swap( void *, void *) asm("cuoco_ctx_swap");
 
-struct cuoco_t {
-  int status;
-  struct cuoco_ctx_t *ctx;
-};
+cuoco_ctx_t *cuoco_ctx_head = NULL;
+cuoco_ctx_t *cuoco_ctx_tail = NULL;
+void *cuoco_main[2];
 
-static struct cuoco_t env[MAX_CUOCO] = {{0}};
-static int current_co = 0;
-
-void cuoco_routine_func(void *func)
+void cuoco_yield()
 {
-  printf("routine!\n");
+  cuoco_ctx_t *ctx = cuoco_ctx_head;
+  if(ctx == cuoco_ctx_tail)
+    return;
+  cuoco_ctx_head = cuoco_ctx_head->next;
+  cuoco_ctx_tail->next = ctx;
+  cuoco_ctx_tail = ctx;
+  ctx-> next = NULL;
+  cuoco_ctx_swap(ctx, cuoco_ctx_head);
 }
-// int cuoco_create(cuoco_ctx_pfn_t *pfn)
-int cuoco_create()
+void cuoco_routine_init()
 {
-  int index = 0;
-  while(index < MAX_CUOCO && env[index].status != 0)
-    ++index;
-  env[index].status = 1;
-  struct cuoco_ctx_t *ctx = malloc(sizeof(struct cuoco_ctx_t));
+  cuoco_ctx_t *current_ctx = cuoco_ctx_head;
+  current_ctx->routine(current_ctx->param);
+  current_ctx->status = END;
+  cuoco_ctx_swap(cuoco_ctx_head, cuoco_main);
+}
+
+cuoco_ctx_t *cuoco_create(cuoco_ctx_pfn_t pfn, void *param)
+{
+  cuoco_ctx_t *ctx = malloc(sizeof(cuoco_ctx_t));
   memset(ctx, 0, sizeof(*ctx));
-  // ctx->routine = pfn;
-  current_co = index;
-  return index;
-}
-
-char stack[1024 * 128];
-void *regs[5];
-void *regs2[5];
-
-void saybye();
-void yield()
-{
-  if(current_co++%2==0)
-    cuoco_ctx_swap(regs, regs2);
-  else
-    cuoco_ctx_swap(regs2, regs);
-}
-
-void saybyebye(int times)
-{
-  for(int a=0; a<times; ++a)
-  {
-    printf("Bye %d\n", a);
-    yield();
+  ctx->regs[0] = ctx->run_stack + STACKSIZE - 1;
+  ctx->regs[1] = cuoco_routine_init;
+  ctx->routine = pfn;
+  ctx->param = param;
+  ctx->next = cuoco_ctx_head;
+  ctx->status = INIT;
+  cuoco_ctx_head = ctx;
+  if (!cuoco_ctx_tail) {
+    cuoco_ctx_tail = cuoco_ctx_head;
   }
+  return ctx;
 }
-void saybye()
+
+void cuoco_start()
 {
-  int a = 100;
-  saybyebye(a);
+  cuoco_ctx_t *ctx;
+  while ( (ctx=cuoco_ctx_head) != NULL ) {
+    if(ctx->status==INIT){
+      cuoco_ctx_swap(cuoco_main, ctx);
+    }
+    if(ctx->status==END){
+      cuoco_ctx_head = cuoco_ctx_head->next;
+      free(ctx);
+    }
+  }
 }
 
 void sayhi(int times)
@@ -83,23 +79,26 @@ void sayhi(int times)
   for(int a=0; a<times; ++a)
   {
     printf("Hi  %d\n", a);
-    yield();
+    cuoco_yield();
   }
 }
-// void *regs[5];
-void *a, *b, *c;
+
+void saybye(int times)
+{
+  for(int a=0; a<times; ++a)
+  {
+    printf("Bye %d\n", a);
+    cuoco_yield();
+  }
+}
 
 int main(int argc, char *argv[])
 {
   printf("Hi, main!\n");
-  regs2[0] = stack + 1024*128 - 1;
-  regs2[1] = saybye;
-  current_co = 0;
-  // printf("Hi, create %d\n", cuoco_create());
+  printf("routine create %p!\n", cuoco_create((cuoco_ctx_pfn_t)sayhi, (void *)10));
+  printf("routine create %p!\n", cuoco_create((cuoco_ctx_pfn_t)saybye, (void *)10));
 
-  sayhi(10);
+  cuoco_start();
 
-  printf("Hi, create %d\n", cuoco_create());
-  printf("Hi, create %d\n", cuoco_create());
   return 0;
 }
