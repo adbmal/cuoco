@@ -95,7 +95,7 @@ void saybye(int times)
 int main(int argc, char *argv[])
 {
   printf("Hi, main!\n");
-  printf("routine create %p!\n", cuoco_create((cuoco_ctx_pfn_t)sayhi, (void *)10));
+  printf("routine create %p!\n", cuoco_create((cuoco_ctx_pfn_t)sayhi, (void *)20));
   printf("routine create %p!\n", cuoco_create((cuoco_ctx_pfn_t)saybye, (void *)10));
 
   cuoco_start();
